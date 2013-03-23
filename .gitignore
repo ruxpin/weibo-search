@@ -1,0 +1,15 @@
+############
+## Windows
+############
+
+# Windows image file caches
+Thumbs.db
+
+# Folder config file
+*.ini
+
+############
+## Custom
+############
+*.html
+*.db

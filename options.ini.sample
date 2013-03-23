@@ -1,0 +1,19 @@
+[sina]
+	login_url = http://weibo.com
+  search_url_base = http://s.weibo.com/weibo/
+  keyword_param = 
+  page_param = page
+  username = xxx@xxx.com
+  password = xxx
+  interval = 3
+  table = sina_weibo
+
+[tencent]
+  login_url = http://t.qq.com
+  search_url_base = http://search.t.qq.com/index.php?
+  keyword_param = k
+  page_param = p
+  username = xxx@xxx.com
+  password = xxx
+  interval = 3
+  table = tencent_weibo
