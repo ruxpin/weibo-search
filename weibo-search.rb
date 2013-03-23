@@ -1,6 +1,7 @@
 #encoding: utf-8
 require 'optparse'
 require_relative 'lib/sina'
+require_relative 'lib/tencent'
 
 options = {}
 begin
@@ -55,7 +56,7 @@ if options[:init_table]
     db=SQLite3::Database.open "feedsHub.db"
     db.execute "drop table if exists #{options[:table_name]}"
     db.execute "create table if not exists #{options[:table_name]}(id INTEGER PRIMARY KEY autoincrement, content_md5 text, link_md5 text)"
-    puts "\n数据库初始化完毕"
+    puts "\n表<#{options[:table_name]}>初始化完毕"
     rescue SQLite3::Exception => e
       puts "Exception occured"
       puts e
@@ -65,5 +66,7 @@ if options[:init_table]
   end
 end
 
-s=Sina.new options
-s.process_pages
+# s=Sina.new options
+# s.process_pages
+t=Tencent.new options
+t.process_pages

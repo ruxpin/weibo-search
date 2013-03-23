@@ -7,6 +7,7 @@
   password = xxx
   interval = 3
   table = sina_weibo
+  max_page = 5
 
 [tencent]
   login_url = http://t.qq.com
@@ -17,3 +18,4 @@
   password = xxx
   interval = 3
   table = tencent_weibo
+  max_page = 5
