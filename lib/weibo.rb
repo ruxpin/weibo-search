@@ -14,23 +14,23 @@ class Weibo
 
   def initialize(options={})
     @feeds, @new_feeds_insert_sql = [], []
-    setup_logger options
+    setup_logger_by options
   end
 
-  def self.set_options_for(weibo)
+  def self.set_options
     encoding = CharDet.detect(File.open("options.ini", &:readline)).encoding
-    @options = IniFile.load("options.ini", :encoding => encoding)[weibo]
+    @options = IniFile.load("options.ini", :encoding => encoding)[name.downcase]
     @options.each do |key, value|
       instance_variable_set("@"+key, value)
       define_singleton_method(key.to_sym) {instance_variable_get("@"+key)}
     end
   end
 
-  def setup_logger(options)
+  def setup_logger_by(options)
     @logger = Logger.new(STDOUT)
     @logger::level = options[:debug] ? Logger::DEBUG : Logger::INFO
     @logger.datetime_format = "%Y-%m-%d %H:%M:%S"
-    @logger.formatter = proc { |severity, datetime, progname, msg| "#{datetime}: #{msg}\n"  }
+    @logger.formatter = proc { |severity, datetime, progname, msg| "#{datetime}: #{msg}\n" }
   end
 
   def browser
@@ -38,20 +38,24 @@ class Weibo
   end
 
   def search_page(page_num)
-    self.class.search_url_base+(self.class.keyword_param.strip.empty? ? '' : (self.class.keyword_param+'='))+"ruxpin"+"&"+self.class.page_param+'='+page_num.to_s
+    self.class.search_url_base+(self.class.keyword_param.strip.empty? ? '' : (self.class.keyword_param+'='))+"test"+"&"+self.class.page_param+'='+page_num.to_s
   end
 
 
 private
 
-# 每个微博的登录界面不一样，需要在具体类里实现填写用户密码并点击登录页面的行为并通过block传递进来
+# 每个微博的登录界面不一样，需要在具体类里实现填写用户密码并点击登录的行为并通过block传递进来
   def login(&block)
     begin
-      browser.visible = false unless logger.debug? 
+      logger.debug "login processing"
+      logger.debug "Username: " + self.class.username
+      logger.debug "password: " + self.class.password
       browser.goto self.class.login_url
       yield
+      browser.visible = false unless logger.debug? 
       logger.info "用户成功登录！"
-    rescue Watir::Exception::UnknownObjectException => e
+    rescue Watir::Exception::UnknownObjectException, Watir::Exception::UnknownFrameException => e
+      logger.debug e
       logger.info "用户已登录！"
     end
   end
@@ -67,10 +71,10 @@ private
       return
     end
     sleep self.class.interval.to_i+rand(4)
-    get_feeds_from_page page+1, &block
+    get_feeds_from_page page.next, &block
   end
 
-  def save_feeds(feed, feedlink)
+  def save_feed(feed, feedlink)
     logger.debug "取回微博内容 ==> "+feed.text.gsub(/\s+/, "").gsub("\n",'')
     logger.debug "取回微博链接 ==> "+feedlink
     feeds << {:content => feed.text.gsub(/\s+/, "").gsub("\n",''), :link => feedlink}
@@ -78,7 +82,7 @@ private
 
 # 保存至数据库时都是只保留content的md5和link的md5
   def save_new_feeds_to_db
-    @browser = browser.close
+    @browser = browser.close unless logger::level == Logger::DEBUG # this will set @browser to nil so you can get a new Watir::Browser when you call browser
     logger.info "没有更多搜索结果，正在检查新微博并保存至数据库"
     logger.info "共取回微博信息"+feeds.length.to_s+"条"
     begin
@@ -87,7 +91,7 @@ private
         content_md5=Digest::MD5.hexdigest(feed[:content])
         link_md5=Digest::MD5.hexdigest(feed[:link])
         rs = db.execute "select * from #{self.class.table} where content_md5=\'#{content_md5}\' and link_md5=\'#{link_md5}\'"
-        puts "select * from #{self.class.table} where content_md5=\'#{content_md5}\' and link_md5=\'#{link_md5}\'"
+        logger.debug "select * from #{self.class.table} where content_md5=\'#{content_md5}\' and link_md5=\'#{link_md5}\'"
         if rs.empty?
           new_feeds_insert_sql << "insert into  #{self.class.table}(content_md5,link_md5) values(\'#{content_md5}\',\'#{link_md5}\')"
         end
@@ -99,7 +103,7 @@ private
       end
       db.execute "begin"
       new_feeds_insert_sql.each do |insert_sql|
-        logger.info "run sql: #{insert_sql}" if logger.debug?
+        logger.debug "run sql: #{insert_sql}" if logger.debug?
         db.execute insert_sql
       end
       db.execute "commit"

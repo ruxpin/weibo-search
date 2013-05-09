@@ -3,7 +3,7 @@ require_relative 'weibo'
 
 class Sina < Weibo
   
-  set_options_for name.downcase
+  set_options
 
   def process_pages
     login do
@@ -20,7 +20,7 @@ class Sina < Weibo
       content.each do |feed|
         feedlink = feed.xpath("./p/a[@class = 'date']").last['href']
         feed = feed.xpath("./p[@node-type = 'feed_list_content']")
-        save_feeds(feed, feedlink)
+        save_feed(feed, feedlink)
       end
     end
   end
